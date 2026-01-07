@@ -2,8 +2,10 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:task_manager_new/ui/screens/forget_password_email_verify.dart';
+import '../../data/models/user_model.dart';
 import '../../data/services/api_caller.dart';
 import '../../data/utils/urls.dart';
+import '../controllers/auth_controller.dart';
 import '../widgets/screen_background.dart';
 import 'main_nav_bar_folder.dart';
 import 'sign_up.dart';
@@ -40,8 +42,8 @@ class _LoginPageState extends State<LoginPage> {
           padding: EdgeInsets.all(30),
           child: SingleChildScrollView(
             child: Form(
+              key: _formKey,
               child: Column(
-                key: _formKey,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const SizedBox(height: 150,),
@@ -68,6 +70,7 @@ class _LoginPageState extends State<LoginPage> {
                   const SizedBox(height: 10,),
                   TextFormField(
                     controller: _passwordController,
+                    obscureText: true,
                     decoration: InputDecoration(
                       hintText: 'Password',
                     ),
@@ -75,7 +78,7 @@ class _LoginPageState extends State<LoginPage> {
                       if(value == null || value.isEmpty){
                         return 'please enter your password';
                       }
-                      if(value.length <= 6){
+                      if(value.length < 6){
                         return 'Enter your password';
                       }
                       return null;
@@ -91,21 +94,24 @@ class _LoginPageState extends State<LoginPage> {
                   Center(
                     child: Column(
                       children: [
-                        TextButton(onPressed: _onTabForgetPassword, child: Text('Forget password'),),
+                        TextButton(
+                          onPressed: _onTabForgetPassword,
+                          child: Text('Forget password'),
+                        ),
                         RichText(text: TextSpan(
-                            text: "Don't have an account?",
+                            text: "Don't have an account? ",
                             children: [
                               TextSpan(
                                   text: 'Sign up',
                                   style: TextStyle(
                                     color: Colors.green,
+                                    fontWeight: FontWeight.bold
                                   ),
                                 recognizer: TapGestureRecognizer()..onTap = _onTapSignUp
                               )
                             ],
                             style: TextStyle(
                               color: Colors.black,
-                              fontWeight: FontWeight.bold,
                             )
                         ))
                       ],
@@ -124,39 +130,82 @@ class _LoginPageState extends State<LoginPage> {
     _passwordController.clear();
   }
 
-  Future<void> _signIn()async{
+
+  Future<void> _signIn() async {
+    // 1. Start loading state
     setState(() {
       _signInProgress = true;
     });
-    Map<String,dynamic>requestBody = {
-      "email":_emailController.text,
-      "password":_passwordController.text,
-    };
 
-    final ApiResponse response = await ApiCaller.postRequest(
-      url: Urls.loginUrl,
-      body: requestBody,
-    );
-    setState(() {
-      _signInProgress = false;
-    });
+    try {
+      Map<String, dynamic> requestBody = {
+        "email": _emailController.text.trim(),
+        "password": _passwordController.text,
+      };
 
-    if(response.isSuccess){
-      _clearTextField();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Sing In Success'),
-          backgroundColor: Colors.green,
-          duration: Duration(seconds: 2),
-        ),
+      // 2. Make API Call
+      final ApiResponse response = await ApiCaller.postRequest(
+        url: Urls.loginUrl,
+        body: requestBody,
       );
-      Navigator.pushReplacement(context, MaterialPageRoute(builder: (context)=>MainNavBarFolder()));
-    }else{
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(response.responseData['data']),
-          backgroundColor: Colors.red,
-          duration: Duration(seconds: 2),
-        ),
-      );
+
+      // Check if widget is mounted before using context or setState
+      if (!mounted) return;
+
+      if (response.isSuccess) {
+        // 3. Handle Success
+        UserModel model = UserModel.fromJson(response.responseData['data']);
+        String accessToken = response.responseData['token'];
+
+        await AuthController.saveUserData(model, accessToken);
+        _clearTextField();
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Sign In Success'),
+              backgroundColor: Colors.green,
+              duration: Duration(seconds: 2),
+            ),
+          );
+          // Use pushAndRemoveUntil to prevent going back to login
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (context) => const MainNavBarFolder()),
+                (route) => false,
+          );
+        }
+      } else {
+        // 4. Handle API Error (e.g., wrong password)
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              // Use errorMessage from ApiResponse for safety
+              content: Text(response.errorMessage ?? 'Login failed! Please check your credentials.'),
+              backgroundColor: Colors.red,
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      // 5. Handle Unexpected Exceptions (e.g., parsing error)
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Something went wrong'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        debugPrint("✅❌$e");
+      }
+    } finally {
+      // 6. Stop loading state (Always runs)
+      if (mounted) {
+        setState(() {
+          _signInProgress = false;
+        });
+      }
     }
   }
 

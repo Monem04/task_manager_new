@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 class TaskCountByStatus extends StatelessWidget {
   const TaskCountByStatus({
-    super.key, required this.title, required this.count,
+    super.key,
+    required this.title,
+    required this.count,
   });
 
   final String title;

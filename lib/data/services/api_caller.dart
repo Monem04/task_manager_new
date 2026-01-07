@@ -1,7 +1,11 @@
 import 'dart:convert';
 
+import 'package:flutter/cupertino.dart';
 import 'package:http/http.dart';
 import 'package:logger/logger.dart';
+import 'package:task_manager_new/ui/controllers/auth_controller.dart';
+
+import '../../app.dart';
 
 class ApiCaller {
   static final Logger _logger = Logger();
@@ -10,8 +14,14 @@ class ApiCaller {
     try {
       Uri uri = Uri.parse(url);
       _logRequest(url);
-      Response response = await get(uri);
+      Response response = await get(
+          uri,
+          headers: {
+            'token' : AuthController.accessToken ?? ''
+          }
+      );
       _logResponse(url, response);
+
       final int statusCode = response.statusCode;
       final decodedData = jsonDecode(response.body);
       if (statusCode == 200) {
@@ -19,7 +29,15 @@ class ApiCaller {
             responseCode: statusCode,
             isSuccess: true,
             responseData: decodedData);
-      } else {
+      }
+      else if(statusCode == 401){
+        await _movetoLogin();
+        return ApiResponse(
+            responseCode: -1,
+            isSuccess: false,
+            responseData: null);
+      }
+      else {
         return ApiResponse(
             responseCode: statusCode,
             isSuccess: false,
@@ -44,6 +62,7 @@ class ApiCaller {
         headers: {
           "Accept": "application/json",
           "Content-Type": "application/json",
+          'token' : AuthController.accessToken ?? ''
         },
         body: body != null ? jsonEncode(body) : null,
       );
@@ -55,6 +74,12 @@ class ApiCaller {
             responseCode: statusCode,
             isSuccess: true,
             responseData: decodedData);
+      }else if(statusCode == 401){
+        await _movetoLogin();
+        return ApiResponse(
+            responseCode: -1,
+            isSuccess: false,
+            responseData: null);
       } else {
         return ApiResponse(
             responseCode: statusCode,
@@ -83,6 +108,10 @@ class ApiCaller {
           'Status code => ${response.statusCode}\n'
           'Response Boy => ${response.body}\n',
     );
+  }
+  static Future<void>_movetoLogin()async{
+    await AuthController.clearUserData();
+    Navigator.pushNamedAndRemoveUntil(TaskManagerApp.navigator.currentContext!, '/Login', (predicate)=>false);
   }
 }
 

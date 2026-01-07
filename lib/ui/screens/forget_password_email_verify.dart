@@ -1,6 +1,9 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:task_manager_new/ui/screens/forget_password_verify_otp.dart';
 import 'package:task_manager_new/ui/widgets/screen_background.dart';
+
+import 'login_page.dart';
 class ForgetPasswordEmailVerify extends StatelessWidget {
   const ForgetPasswordEmailVerify({super.key});
 
@@ -38,18 +41,22 @@ class ForgetPasswordEmailVerify extends StatelessWidget {
                 child: Column(
                   children: [
                     RichText(text: TextSpan(
-                        text: "Already have an account?",
+                        text: "Already have an account? ",
                         children: [
                           TextSpan(
                               text: 'Sign in',
                               style: TextStyle(
                                 color: Colors.green,
-                              )
+                                fontWeight: FontWeight.bold,
+                              ),
+                              recognizer: TapGestureRecognizer()
+                                ..onTap = (){
+                                  Navigator.pushReplacement(context, MaterialPageRoute(builder: (context)=> LoginPage()));
+                                }
                           )
                         ],
                         style: TextStyle(
                           color: Colors.black,
-                          fontWeight: FontWeight.bold,
                         )
                     ))
                   ],

@@ -8,9 +8,12 @@ import 'package:task_manager_new/ui/screens/update_profile.dart';
 class TaskManagerApp extends StatelessWidget {
   const TaskManagerApp({super.key});
 
+  static GlobalKey <NavigatorState> navigator = GlobalKey<NavigatorState>();
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorSchemeSeed: Colors.green,
         textTheme: TextTheme(
@@ -44,7 +47,6 @@ class TaskManagerApp extends StatelessWidget {
         ),
       ),
       initialRoute: '/SplashScreen',
-
       routes: {
         '/SplashScreen':(_) => SplashScreen(),
         '/Login':(_) => LoginPage(),

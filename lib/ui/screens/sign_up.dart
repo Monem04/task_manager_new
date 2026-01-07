@@ -1,6 +1,8 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:task_manager_new/data/services/api_caller.dart';
 import 'package:task_manager_new/ui/screens/forget_password_verify_otp.dart';
+import 'package:task_manager_new/ui/screens/login_page.dart';
 import 'package:task_manager_new/ui/widgets/screen_background.dart';
 
 import '../../data/utils/urls.dart';
@@ -29,9 +31,9 @@ class _SignUpState extends State<SignUp> {
         child: Padding(
           padding: const EdgeInsets.all(30),
           child: Form(
+            key: _formKey,
             child: SingleChildScrollView(
               child: Column(
-                key: _formKey,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const SizedBox(height: 150,),
@@ -135,19 +137,21 @@ class _SignUpState extends State<SignUp> {
                     child: Column(
                       children: [
                         RichText(text: TextSpan(
-                            text: "Already have an account?",
+                            text: "Already have an account? ",
+                            style: TextStyle(color: Colors.black87),
                             children: [
                               TextSpan(
                                   text: 'Sign in',
                                   style: TextStyle(
                                     color: Colors.green,
-                                  )
+                                    fontWeight: FontWeight.bold
+                                  ),
+                                  recognizer: TapGestureRecognizer()
+                                  ..onTap = (){
+                                    Navigator.pushReplacement(context, MaterialPageRoute(builder: (context)=> LoginPage()));
+                                  }
                               )
                             ],
-                            style: TextStyle(
-                              color: Colors.black,
-                              fontWeight: FontWeight.bold,
-                            )
                         ))
                       ],
                     ),
@@ -173,10 +177,11 @@ class _SignUpState extends State<SignUp> {
     setState(() {
       _signUpInProgress = true;
     });
-    Map<String,dynamic>requestBody = {
-      "email":_emailController.text,
-      "firstName":_firstNameController.text,
-      "lastName":_lastNameController.text,
+
+    Map<String,dynamic> requestBody = {
+      "email":_emailController.text.trim(),
+      "firstName":_firstNameController.text.trim(),
+      "lastName":_lastNameController.text.trim(),
       "mobile":_mobileController.text,
       "password":_passwordController.text,
     };
@@ -185,29 +190,36 @@ class _SignUpState extends State<SignUp> {
       url: Urls.registrationUrl,
       body: requestBody,
     );
+
     setState(() {
       _signUpInProgress = false;
     });
 
     if(response.isSuccess){
       _clearTextField();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Sing Up Success'),
-          backgroundColor: Colors.green,
-          duration: Duration(seconds: 2),
-        ),
-      );
-    }else{
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(response.responseData['data']),
-          backgroundColor: Colors.red,
-          duration: Duration(seconds: 2),
-        ),
-      );
+      if(mounted){
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Sing Up Success'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    }
+    else{
+      if(mounted){
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(response.responseData['data']),
+            backgroundColor: Colors.red,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
     }
   }
 
 
+  @override
   void dispose(){
     _emailController.dispose();
     _firstNameController.dispose();

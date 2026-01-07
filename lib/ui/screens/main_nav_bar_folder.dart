@@ -15,10 +15,10 @@ class _MainNavBarFolderState extends State<MainNavBarFolder> {
 
   int _selectedIndex = 0;
 
-  List<Widget> _screens = [
+  final List<Widget> _screens = [
     NewTask(),
     CompletedTask(),
-    CancleTask(),
+    CancelTask(),
     ProgressTaskScreen(),
   ];
 
