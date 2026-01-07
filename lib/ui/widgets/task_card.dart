@@ -95,39 +95,65 @@ class _TaskCardState extends State<TaskCard> {
               ListTile(
                 title: Text("New"),
                 trailing: widget.status == 'New' ? Icon(Icons.check) : null,
+                onTap: ()=> _updateTask("New"),
               ),
               ListTile(
                 title: Text("Progress"),
                 trailing: widget.status == 'Progress' ? Icon(Icons.check) : null,
+                onTap: ()=> _updateTask("Progress"),
               ),
               ListTile(
                 title: Text("Cancel"),
                 trailing: widget.status == 'Cancel' ? Icon(Icons.check) : null,
+                onTap: ()=> _updateTask("Cancel"),
               ),
               ListTile(
                 title: Text("Completed"),
                 trailing: widget.status == 'Completed' ? Icon(Icons.check) : null,
+                onTap: ()=> _updateTask("Completed"),
               ),
             ],
           ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop(); // Dismiss the dialog
-              },
-              child: const Text('No'),
-            ),
-            TextButton(
-              onPressed: (){
-                _deleteTask();
-              },
-              child: Text('Yes', style: TextStyle(color: Colors.red)),
-
-            ),
-          ],
         );
       },
     );
+  }
+
+  Future<void> _updateTask(String status) async{
+    Navigator.pop(context);
+
+    setState(() {
+      _inProgress = true;
+    });
+
+    try{
+      final ApiResponse response = await ApiCaller.getRequest(
+        url: Urls.updateTaskUrl(widget.id, status),
+      );
+      if(response.isSuccess){
+        if(mounted){
+          showSnackBarMessage(context, "Task updated successfully",
+              color: Colors.green);
+          widget.onRefreshList.call();
+        }
+      }
+      else{
+        debugPrint("❌${response.errorMessage}");
+        if(mounted) {
+          showSnackBarMessage(
+              context, "Something went wrong, Please try again later.",
+              color: Colors.red);
+        }
+      }
+    }catch(e){
+      debugPrint("❌$e");
+    }finally{
+      if(mounted) {
+        setState(() {
+          _inProgress = false;
+        });
+      }
+    }
   }
 
   void _showAlertDialog(BuildContext context) {
